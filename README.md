@@ -1,0 +1,1 @@
+# Jet fuel protection: insurnce-style caps vs traditional hedges
