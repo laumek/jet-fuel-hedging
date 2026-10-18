@@ -89,6 +89,23 @@ def main():
     fig.tight_layout()
     fig.savefig(RESULTS / "02_effective_price_by_strategy.png", dpi=150)
 
+    rows = []
+    for loading in (0.0, 0.25, 0.5):
+        for trigger in (0.0, 0.1, 0.2):
+            c = HedgeConfig(loading=loading, trigger_pct=trigger)
+            res, _ = run_backtest(prices, c)
+            m = summary_metrics(res, c)
+            rows.append({
+                "loading": loading, "trigger_pct": trigger,
+                "policy_beats_swap_years": years_policy_beats(res, "swap"),
+                "downside_effectiveness": m.loc["policy", "downside_effectiveness"],
+                "net_payout_$m": (res["policy_payout"].sum() - res["policy_premium"].sum()) / 1e6,
+            })
+    sensitivity = pd.DataFrame(rows)
+    sensitivity.to_csv(RESULTS / "sensitivity.csv", index=False)
+    print("\nSensitivity:\n", sensitivity.round(2))
+
+
     # --- Margin and liquidity ---------------------------------------------
     history = collateral_history(prices, programmes, cfg)
     peaks = peak_collateral(history)

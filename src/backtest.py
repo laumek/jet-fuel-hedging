@@ -169,6 +169,9 @@ def summary_metrics(results: pd.DataFrame, cfg: HedgeConfig = HedgeConfig()) -> 
     table = pd.DataFrame(metrics).T
     table.loc["policy", "premiums_paid_$m"] = results["policy_premium"].sum() / 1e6
     table.loc["policy", "payouts_received_$m"] = results["policy_payout"].sum() / 1e6
+    fair_total = results["policy_premium"].sum() / (1 + cfg.loading)
+    table.loc["policy", "breakeven_loading"] = results["policy_payout"].sum() / fair_total - 1
+    
     return table
 
 
