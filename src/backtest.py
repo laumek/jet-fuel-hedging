@@ -147,6 +147,11 @@ def summary_metrics(results: pd.DataFrame, cfg: HedgeConfig = HedgeConfig()) -> 
     surprise = results[STRATEGIES].sub(results["budget"], axis=0)
     unhedged_var = surprise["unhedged"].var()
 
+    # Downside only: months under budget count as zero, since coming in under
+    # budget is not a risk the airline needs protecting from.
+    overrun = surprise.clip(lower=0)
+    unhedged_semivar = (overrun["unhedged"] ** 2).mean()
+
     metrics = {}
     for s in STRATEGIES:
         metrics[s] = {
@@ -157,6 +162,9 @@ def summary_metrics(results: pd.DataFrame, cfg: HedgeConfig = HedgeConfig()) -> 
             "worst_year_$m": annual_full[s].max() / 1e6,
             "budget_surprise_std_$m": surprise[s].std() / 1e6,
             "hedge_effectiveness": 1 - surprise[s].var() / unhedged_var,
+            "overrun_semidev_$m": np.sqrt((overrun[s] ** 2).mean()) / 1e6,
+            "p95_overrun_$m": surprise[s].quantile(0.95) / 1e6,
+            "downside_effectiveness": 1 - (overrun[s] ** 2).mean() / unhedged_semivar,
         }
     table = pd.DataFrame(metrics).T
     table.loc["policy", "premiums_paid_$m"] = results["policy_premium"].sum() / 1e6

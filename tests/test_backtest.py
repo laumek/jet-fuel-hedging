@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.backtest import HedgeConfig, run_backtest, summary_metrics
 from src.margin import collateral_history, peak_collateral
@@ -34,3 +35,12 @@ def test_collateral_is_never_negative():
     _, programmes = run_backtest(prices, cfg, 2008, 2009)
     peaks = peak_collateral(collateral_history(prices, programmes, cfg))
     assert (peaks >= 0).all().all()
+
+
+def test_swap_effectiveness_matches_theory():
+    cfg = HedgeConfig(hedge_ratio=0.6)
+    results, _ = run_backtest(synthetic_prices(), cfg, 2008, 2012)
+    m = summary_metrics(results, cfg)
+    expected = 1 - (1 - cfg.hedge_ratio) ** 2
+    assert m.loc["swap", "hedge_effectiveness"] == pytest.approx(expected)
+    assert m.loc["swap", "downside_effectiveness"] == pytest.approx(expected)
